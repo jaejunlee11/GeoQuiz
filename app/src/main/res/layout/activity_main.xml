@@ -31,8 +31,24 @@
             android:layout_height="wrap_content"
             android:text="@string/false_button"/>
     </LinearLayout>
-    <Button
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/next_button"/>
+        android:orientation="horizontal">
+        <ImageButton
+            android:id="@+id/previous_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/arrow_left"
+            android:contentDescription="@string/previous_button"/>
+        <ImageButton
+            android:id="@+id/next_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/arrow_right"
+            android:contentDescription="@string/next_button"
+            android:layout_marginLeft="10dp" />
+
+    </LinearLayout>
+
 </LinearLayout>
