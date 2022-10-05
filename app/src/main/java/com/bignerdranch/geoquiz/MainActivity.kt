@@ -7,32 +7,33 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
+
 //1.애플리케이션이 실행되는 동안 속성값을 계속 보존해야할 때 2.애플리케이션 전체에서 사용하는 상수를 정의할 때
 //최상위 수준 속성
 private const val TAG="MainActivity"
+private const val KEY_INDEX="index"
 
 class MainActivity : AppCompatActivity() {
 
+    private val quizViewModel:QuizViewModel by lazy{
+        ViewModelProvider(this).get(QuizViewModel::class.java)
+    }
+
     private lateinit var trueButton: Button
-    private lateinit var falseButton:Button
-    private lateinit var nextButton:Button
+    private lateinit var falseButton: Button
+    private lateinit var nextButton: Button
     private lateinit var questionTextView: TextView
 
-    private val questionBank = listOf(
-        Question(R.string.question_australia,true,false),
-        Question(R.string.question_oceans,true,false),
-        Question(R.string.question_mideast,false,false),
-        Question(R.string.question_africa,false,false),
-        Question(R.string.question_americas,true,false),
-        Question(R.string.question_asia,true,false))
 
-    private var currentIndex=0
-    private var wrongAnswer=0
-    private var correctANswer=0
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(TAG,"onCreate(Bundle?) called")
         setContentView(R.layout.activity_main)
+        // ?: 의 경우 왼쪽이 null값이면 오른쪽 값이 나옴(default설정)
+        val currentIndex=savedInstanceState?.getInt(KEY_INDEX,0)?:0
+        quizViewModel.currentIndex=currentIndex
+
 
         trueButton=findViewById(R.id.true_button)
         falseButton=findViewById(R.id.false_button)
@@ -42,17 +43,18 @@ class MainActivity : AppCompatActivity() {
         //단 현재 버전에서는 그냥은 적용 불가 -> android 11(R)이상 적용 X
         trueButton.setOnClickListener{ view: View ->
             checkAnswer(true)
+            updateQuestion()
         }
         falseButton.setOnClickListener{view:View ->
             checkAnswer(false)
             updateQuestion()
         }
         nextButton.setOnClickListener {
-            if(currentIndex==questionBank.size-1){
-                var score=(100*correctANswer/(correctANswer+wrongAnswer))
+            if(quizViewModel.checkNext()){
+                var score=quizViewModel.getScore()
                 Toast.makeText(this,"점수는 $score 점 입니다.",Toast.LENGTH_SHORT).show()
             }
-            currentIndex=(currentIndex+1)%questionBank.size
+            quizViewModel.moveToNext()
             updateQuestion()
         }
         updateQuestion()
@@ -74,6 +76,12 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG,"onPause() called")
     }
 
+    override fun onSaveInstanceState(savedInstancestate: Bundle) {
+        super.onSaveInstanceState(savedInstancestate)
+        Log.d(TAG,"onSaveInstanceState")
+        savedInstancestate.putInt(KEY_INDEX,quizViewModel.currentIndex)
+    }
+
     override fun onStop() {
         super.onStop()
         Log.d(TAG,"onStop() called")
@@ -84,8 +92,8 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG,"onDestroy() called")
     }
     private fun updateQuestion(){
-        val questionTextResID=questionBank[currentIndex].textResId
-        val questionCorrect=questionBank[currentIndex].correct
+        val questionTextResID=quizViewModel.currentQuestionText
+        val questionCorrect=quizViewModel.currentQuestionCorrect
         questionTextView.setText(questionTextResID)
         if(questionCorrect==true){
             trueButton.isEnabled=false
@@ -96,7 +104,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
     private fun checkAnswer(userAnswer:Boolean){
-        val correctAnswer=questionBank[currentIndex].answer
+        val correctAnswer=quizViewModel.currentQuestionAnswer
 
         val messageResId=if (userAnswer==correctAnswer){
             R.string.correct_toast
@@ -104,11 +112,11 @@ class MainActivity : AppCompatActivity() {
             R.string.incorrect_toast
         }
         if (userAnswer==correctAnswer){
-            questionBank[currentIndex].correct=true
+            quizViewModel.answered()
             updateQuestion()
-            correctANswer+=1
+            quizViewModel.upCorrect()
         }else{
-            wrongAnswer+=1
+            quizViewModel.upWrong()
         }
         Toast.makeText(this,messageResId,Toast.LENGTH_SHORT).show()
     }
