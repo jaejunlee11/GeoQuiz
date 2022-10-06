@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
                 var score=quizViewModel.getScore()
                 Toast.makeText(this,"점수는 $score 점 입니다.",Toast.LENGTH_SHORT).show()
             }
-            quizViewModel.moveToNext()
+            //quizViewModel.moveToNext()
             updateQuestion()
         }
         updateQuestion()
