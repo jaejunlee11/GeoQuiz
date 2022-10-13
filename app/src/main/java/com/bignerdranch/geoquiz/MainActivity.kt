@@ -1,7 +1,10 @@
 package com.bignerdranch.geoquiz
 
+import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.ActivityOptions
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -29,7 +32,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cheatButton:Button
     private lateinit var questionTextView: TextView
 
-
+    @SuppressLint("RestrictedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(TAG,"onCreate(Bundle?) called")
@@ -62,16 +65,21 @@ class MainActivity : AppCompatActivity() {
             quizViewModel.moveToNext()
             updateQuestion()
         }
-        cheatButton.setOnClickListener {
+        cheatButton.setOnClickListener {view->
             //넘겨줄 데이터 저장
             val answerIsTrue=quizViewModel.currentQuestionAnswer
+            var cheatCount=quizViewModel.cheatCount
             //cheatActivity에 있는 함수 실행-> intent에 정답을 담음
-            val intent=CheatActivity.newIntent(this@MainActivity,answerIsTrue)
-            //엑티비티를 실행할 때 뒤로가기를 통해 오면 결과를 받도록 설정,setResult를 안하고 나오면 Activity.RESULT_CANCELED를 받음
-            startActivityForResult(intent, REQUEST_CODE_CHEAT)
+            val intent=CheatActivity.newIntent(this@MainActivity,answerIsTrue,cheatCount)
+            if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.M){
+                val options=ActivityOptions.makeClipRevealAnimation(view,0,0,view.width,view.height)
+                startActivityForResult(intent, REQUEST_CODE_CHEAT,options.toBundle())
+            }else{
+                //엑티비티를 실행할 때 뒤로가기를 통해 오면 결과를 받도록 설정,setResult를 안하고 나오면 Activity.RESULT_CANCELED를 받음
+                startActivityForResult(intent, REQUEST_CODE_CHEAT)
+            }
         }
         updateQuestion()
-
     }
     //setResult를 자식 액티비티에서 실행시켰다면 해당 함수가 실행됨
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -86,6 +94,11 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG,"2.정보는 넘어 왔으나 isCheater값 그대로임")
             if(data?.getBooleanExtra(EXTRA_ANSWER_SHOWN,false)?:false){
                 quizViewModel.cheat()
+                quizViewModel.cheatCount-=1
+                if(quizViewModel.cheatCount==0){
+                    cheatButton.isEnabled=false
+                }
+                Log.d(TAG,"cheatCount ${quizViewModel.cheatCount}")
             }
         }
     }
